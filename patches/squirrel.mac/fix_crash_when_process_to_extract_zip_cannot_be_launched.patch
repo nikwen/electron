@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Tue, 27 May 2025 02:03:54 +0200
+Subject: fix: crash when process to extract zip cannot be launched
+
+Fixes https://github.com/electron/electron/issues/47270
+
+diff --git a/Squirrel/SQRLZipArchiver.h b/Squirrel/SQRLZipArchiver.h
+index d1f6f3e63acfeb7ffbeeae98ac7144e4d1caa431..5df567f905ac25ac8efe895d09e24c47c203a75c 100644
+--- a/Squirrel/SQRLZipArchiver.h
++++ b/Squirrel/SQRLZipArchiver.h
+@@ -46,4 +46,6 @@ extern const NSInteger SQRLZipArchiverShellTaskFailed;
+ // Returns a signal which will complete or error on an unspecified thread.
+ + (RACSignal *)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL;
+ 
+++ (void)setMockDittoPath:(NSString *)path;
++
+ @end
+diff --git a/Squirrel/SQRLZipArchiver.m b/Squirrel/SQRLZipArchiver.m
+index 68f5dac8e553638f41306956df9d38eeda18f8f2..46a238884d6e4446cd58e27fac5996b43769d27a 100644
+--- a/Squirrel/SQRLZipArchiver.m
++++ b/Squirrel/SQRLZipArchiver.m
+@@ -53,7 +53,7 @@ - (id)init {
+ 	_standardErrorPipe = [[NSPipe alloc] init];
+ 
+ 	_dittoTask = [[NSTask alloc] init];
+-	_dittoTask.launchPath = @"/usr/bin/ditto";
++	_dittoTask.launchPath = mockDittoPath ?: @"/usr/bin/ditto";
+ 	_dittoTask.environment = @{ @"DITTOABORT": @"1" };
+ 	_dittoTask.standardError = self.standardErrorPipe;
+ 
+@@ -153,9 +153,27 @@ - (RACSignal *)launchWithArguments:(NSArray *)arguments {
+ 		setNameWithFormat:@"-launchWithArguments: %@", arguments];
+ 
+ 	self.dittoTask.arguments = arguments;
+-	[self.dittoTask launch];
++
++	NSError *launchError = nil;
++
++	if (![self.dittoTask launchAndReturnError:&launchError]) {
++		NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
++		userInfo[NSLocalizedDescriptionKey] = launchError.localizedDescription;
++
++		NSLog(@"Starting ditto task failed with error: %@", launchError.localizedDescription);
++
++		return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
++	}
+ 
+ 	return signal;
+ }
+ 
++#pragma mark Testing
++
++static NSString *mockDittoPath = nil;
++
+++ (void)setMockDittoPath:(NSString *)path {
++	mockDittoPath = [path copy];
++}
++
+ @end
+diff --git a/SquirrelTests/SQRLZipArchiverSpec.m b/SquirrelTests/SQRLZipArchiverSpec.m
+index 4477ddf22b055167615720385c227af8de8a2657..2a4bea711e59a6361d7fdbd73e9c4595e0fd8b56 100644
+--- a/SquirrelTests/SQRLZipArchiverSpec.m
++++ b/SquirrelTests/SQRLZipArchiverSpec.m
+@@ -46,6 +46,25 @@
+ 	expect(error.userInfo[SQRLZipArchiverExitCodeErrorKey]).notTo(equal(0));
+ });
+ 
++it(@"should fail when ditto executable cannot be launched", ^{
++	[SQRLZipArchiver setMockDittoPath:@"/usr/bin/nonexistentfakeditto"];
++
++	NSURL *zipURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication.app" withExtension:@"zip"];
++
++	NSError *error = nil;
++	BOOL success = [[SQRLZipArchiver unzipArchiveAtURL:zipURL intoDirectoryAtURL:self.temporaryDirectoryURL] asynchronouslyWaitUntilCompleted:&error];
++	expect(@(success)).to(beFalsy());
++
++	NSLog(@"%@", error);
++
++	expect(error).notTo(beNil());
++	expect(error.domain).to(equal(SQRLZipArchiverErrorDomain));
++	expect(@(error.code)).to(equal(@(SQRLZipArchiverShellTaskFailed)));
++	expect(error.userInfo[NSLocalizedDescriptionKey]).notTo(beNil());
++
++	[SQRLZipArchiver setMockDittoPath:nil];
++});
++
+ it(@"should create a zip archive readable by itself", ^{
+ 	NSURL *zipURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.zip"];
+ 
