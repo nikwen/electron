@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Sun, 28 Sep 2025 19:38:14 +0200
+Subject: fix: compilation with newer Python version
+
+
+diff --git a/tools/grit/grit/util.py b/tools/grit/grit/util.py
+index 98433d154c009b04a48f5d9aabb7107f5e08386a..98e770b85337c7cbc9001d69afe67de10f3001a3 100644
+--- a/tools/grit/grit/util.py
++++ b/tools/grit/grit/util.py
+@@ -209,7 +209,7 @@ def ReadFile(filename, encoding):
+     mode = 'rb'
+     encoding = None
+   else:
+-    mode = 'rU'
++    mode = 'r'
+ 
+   with io.open(filename, mode, encoding=encoding) as f:
+     return f.read()
