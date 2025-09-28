@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Sun, 28 Sep 2025 21:50:21 +0200
+Subject: fix: e sync on x64 macOS
+
+This command won't work for some reason
+
+diff --git a/third_party/ipcz/DEPS b/third_party/ipcz/DEPS
+index 1f020d1522d00c6b74bccaaeae77582ab5835b17..4f5cdca985324b954c5fc55cc8e483db382a5ceb 100644
+--- a/third_party/ipcz/DEPS
++++ b/third_party/ipcz/DEPS
+@@ -98,7 +98,7 @@ hooks = [
+     'name': 'vpython_common',
+     'pattern': '.',
+     # TODO(https://crbug.com/1205263): Run this on mac/arm too once it works.
+-    'condition': 'not (host_os == "mac" and host_cpu == "arm64")',
++    'condition': 'not (host_os == "mac")',
+     'action': [ 'vpython',
+                 '-vpython-spec', '.vpython',
+                 '-vpython-tool', 'install',
