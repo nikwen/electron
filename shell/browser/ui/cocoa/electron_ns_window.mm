@@ -17,10 +17,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 
 }  // namespace electron
 
-@interface NSWindow (PrivateAPI)
-- (NSImage*)_cornerMask;
-@end
-
 @implementation ElectronNSWindow
 
 @synthesize acceptsFirstMouse;
@@ -28,7 +24,6 @@ bool ScopedDisableResize::disable_resize_ = false;
 @synthesize disableAutoHideCursor;
 @synthesize disableKeyOrMainWindow;
 @synthesize vibrantView;
-@synthesize cornerMask;
 
 - (id)initWithShell:(electron::NativeWindowMac*)shell
           styleMask:(NSUInteger)styleMask {
@@ -166,16 +161,6 @@ bool ScopedDisableResize::disable_resize_ = false;
   if ([item action] == @selector(performClose:))
     return shell_->IsClosable();
   return [super validateUserInterfaceItem:item];
-}
-
-// By overriding this built-in method the corners of the vibrant view (if set)
-// will be smooth.
-- (NSImage*)_cornerMask {
-  if (self.vibrantView != nil) {
-    return [self cornerMask];
-  } else {
-    return [super _cornerMask];
-  }
 }
 
 // Quicklook methods
