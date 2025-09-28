@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Niklas Wenzel <dev@nikwen.de>
+Date: Sun, 28 Sep 2025 17:30:00 +0200
+Subject: fix: build tools version macOS SDK detection
+
+Fixes electron/build-tools macOS SDK version detection
+
+diff --git a/build/mac_toolchain.py b/build/mac_toolchain.py
+index d5ca0a9e1b616642b43efdeb716865e9b860d3a3..ace5b46e051330797e63ee0964760c2430f85dd5 100755
+--- a/build/mac_toolchain.py
++++ b/build/mac_toolchain.py
+@@ -34,7 +34,7 @@ def LoadPList(path):
+     return plistlib.load(f)
+ 
+ 
+-# This contains binaries from Xcode 13.3 13E113, along with the macOS 12 SDK
++# This contains binaries from Xcode 13.3 13E113, along with the macOS 12.3 SDK
+ # (12.3 21E226). To build these packages, see comments in
+ # build/xcode_binaries.yaml
+ MAC_BINARIES_LABEL = 'infra_internal/ios/xcode/xcode_binaries/mac-amd64'
