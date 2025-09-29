@@ -164,3 +164,4 @@ cherry-pick-6b4af5d82083.patch
 fix_build_tools_version_macos_sdk_detection.patch
 fix_compilation_with_newer_python_version.patch
 fix_e_sync_on_x64_macos.patch
+disable_nsautofillheuristiccontroller_on_macos_26.patch
